@@ -1,0 +1,251 @@
+/*
+	Danbi Youn
+*/
+//#include "defs.h"
+#include <iostream>
+#include <stdio.h>
+#include <cstdlib>
+#include <string.h>
+#include <unistd.h>
+#include <ctime>
+#include <cmath>
+#include <X11/Xlib.h>
+#include <X11/keysym.h>
+#include <GL/glx.h>
+#include "ppm.h"
+#include "log.h"
+#include "danbiY.h"
+#include "chrisR.h"
+
+extern "C" {
+#include "fonts.h"
+}
+
+
+struct Vec {
+	float x, y, z;
+};
+
+Vec bPos;
+int bDown = 0;
+extern int endX, endY;
+extern int title, doneg;
+extern bool play_game, exit_game;
+
+
+typedef struct t_box{
+	float width, height;
+	Vec pos;
+} box;
+
+#define MAXBUTTONS 4
+typedef struct t_button {
+	Rect r;
+	char text[32];
+	int over;
+	int down;
+	int click;
+	float color[3];
+	float dcolor[3];
+	Vec center;
+	unsigned int text_color;
+} Button;
+
+struct Global{
+	Button button[MAXBUTTONS];
+	int nbuttons;
+	int gridDim;
+	int boardDim;
+} g;
+box titleBox;
+box playBox;
+box exitBox;
+
+Ppmimage *titleImage = NULL;
+int titlePrompt = 1;
+GLuint titleTexture;
+
+
+void menu(void){
+		
+	glClearColor(1.0,1.0,1.0,1.0);
+	
+	/*Initialize title screen image*/
+    titleImage = ppm6GetImage("./images/title_background1.ppm");
+    glGenTextures(1, &titleTexture);
+    glBindTexture(GL_TEXTURE_2D, titleTexture);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, titleImage->width, titleImage->height,
+			0, GL_RGB, GL_UNSIGNED_BYTE, titleImage->data);
+}
+
+
+void menuRender(void){
+	
+	Rect r;
+	//glClearColor(1.0,1.0,1.0,1.0);
+	//glClear(GL_COLOR_BUFFER_BIT);
+	//glEnable(GL_TEXTURE_2D);
+	glColor3f(1.0, 1.0, 1.0);
+	
+	glBindTexture(GL_TEXTURE_2D, titleTexture);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex2i(0, 0);
+	glTexCoord2f(0.0f, 0.0f); glVertex2i(0, endY);
+	glTexCoord2f(1.0f, 0.0f); glVertex2i(endX, endY);
+	glTexCoord2f(1.0f, 1.0f); glVertex2i(endX, 0);
+	glEnd();
+	//glDisable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_BLEND);
+	
+	//draw all buttons
+	for (int i=0; i<g.nbuttons; i++) {
+		if (g.button[i].over) {
+			int w=2;
+			glColor3f(1.0f, 1.0f, 0.0f);
+			//draw a highlight around button
+			glLineWidth(3);
+			glBegin(GL_LINE_LOOP);
+				glVertex2i(g.button[i].r.left-w,  g.button[i].r.bot-w);
+				glVertex2i(g.button[i].r.left-w,  g.button[i].r.top+w);
+				glVertex2i(g.button[i].r.right+w, g.button[i].r.top+w);
+				glVertex2i(g.button[i].r.right+w, g.button[i].r.bot-w);
+				glVertex2i(g.button[i].r.left-w,  g.button[i].r.bot-w);
+			glEnd();
+			glLineWidth(1);
+		}
+		if (g.button[i].down) {
+			glColor3fv(g.button[i].dcolor);
+		} else {
+			glColor3fv(g.button[i].color);
+		}
+		glBegin(GL_QUADS);
+			glVertex2i(g.button[i].r.left,  g.button[i].r.bot);
+			glVertex2i(g.button[i].r.left,  g.button[i].r.top);
+			glVertex2i(g.button[i].r.right, g.button[i].r.top);
+			glVertex2i(g.button[i].r.right, g.button[i].r.bot);
+		glEnd();
+
+		r.left = g.button[i].r.centerx;
+		r.bot  = g.button[i].r.centery-8;
+		r.center = 1;
+		if (g.button[i].down) {
+			ggprint16(&r, 0, g.button[i].text_color, "Pressed!");
+		} else {
+			ggprint16(&r, 0, g.button[i].text_color, g.button[i].text);
+		}
+
+	}
+}
+
+void initButton(){
+	g.boardDim = g.gridDim * 10;
+	
+	g.nbuttons=0;
+	//play button
+	g.button[g.nbuttons].r.width = 240;
+	g.button[g.nbuttons].r.height = 45;
+	g.button[g.nbuttons].r.left = 270;
+	g.button[g.nbuttons].r.bot = 290;
+	g.button[g.nbuttons].r.right =
+	   g.button[g.nbuttons].r.left + g.button[g.nbuttons].r.width;
+	g.button[g.nbuttons].r.top =
+	   g.button[g.nbuttons].r.bot + g.button[g.nbuttons].r.height;
+	g.button[g.nbuttons].r.centerx =
+	   (g.button[g.nbuttons].r.left + g.button[g.nbuttons].r.right) / 2;
+	g.button[g.nbuttons].r.centery =
+	   (g.button[g.nbuttons].r.bot + g.button[g.nbuttons].r.top) / 2;
+	strcpy(g.button[g.nbuttons].text, "Play now");
+	g.button[g.nbuttons].down = 0;
+	g.button[g.nbuttons].click = 0;
+	g.button[g.nbuttons].color[0] = 0.4f;
+	g.button[g.nbuttons].color[1] = 0.4f;
+	g.button[g.nbuttons].color[2] = 0.7f;
+	g.button[g.nbuttons].dcolor[0] = g.button[g.nbuttons].color[0] * 0.5f;
+	g.button[g.nbuttons].dcolor[1] = g.button[g.nbuttons].color[1] * 0.5f;
+	g.button[g.nbuttons].dcolor[2] = g.button[g.nbuttons].color[2] * 0.5f;
+	g.button[g.nbuttons].text_color = 0x00ffffff;
+	g.nbuttons++;
+	
+	//exit button
+	g.button[g.nbuttons].r.width = 240;
+	g.button[g.nbuttons].r.height = 45;
+	g.button[g.nbuttons].r.left = 270;
+	g.button[g.nbuttons].r.bot = 180;
+	g.button[g.nbuttons].r.right =
+	   g.button[g.nbuttons].r.left + g.button[g.nbuttons].r.width;
+	g.button[g.nbuttons].r.top = g.button[g.nbuttons].r.bot +
+	   g.button[g.nbuttons].r.height;
+	g.button[g.nbuttons].r.centerx = (g.button[g.nbuttons].r.left +
+	   g.button[g.nbuttons].r.right) / 2;
+	g.button[g.nbuttons].r.centery = (g.button[g.nbuttons].r.bot +
+	   g.button[g.nbuttons].r.top) / 2;
+	strcpy(g.button[g.nbuttons].text, "Quit");
+	g.button[g.nbuttons].down = 0;
+	g.button[g.nbuttons].click = 0;
+	g.button[g.nbuttons].color[0] = 0.4f;
+	g.button[g.nbuttons].color[1] = 0.4f;
+	g.button[g.nbuttons].color[2] = 0.7f;
+	g.button[g.nbuttons].dcolor[0] = g.button[g.nbuttons].color[0] * 0.5f;
+	g.button[g.nbuttons].dcolor[1] = g.button[g.nbuttons].color[1] * 0.5f;
+	g.button[g.nbuttons].dcolor[2] = g.button[g.nbuttons].color[2] * 0.5f;
+	g.button[g.nbuttons].text_color = 0x00ffffff;
+	g.nbuttons++;
+}
+
+void checkMouse(XEvent *e){
+	
+	static int savex = 0;
+	static int savey = 0;
+	int i,x,y;
+	int lbutton=0;
+	int rbutton=0;
+	//
+	if (e->type == ButtonRelease)
+		return;
+	if (e->type == ButtonPress) {
+		if (e->xbutton.button==1) {
+			//Left button is down
+			lbutton=1;
+		}
+		if (e->xbutton.button==3) {
+			//Right button is down
+			rbutton=1;
+			if (rbutton){}
+		}
+	}
+	x = e->xbutton.x;
+	y = e->xbutton.y;
+	y = endY - y;
+	if (savex != e->xbutton.x || savey != e->xbutton.y) {
+		//Mouse moved
+		savex = e->xbutton.x;
+		savey = e->xbutton.y;
+	}
+	for (i=0; i<g.nbuttons; i++) {
+		g.button[i].over=0;
+		if (x >= g.button[i].r.left &&
+			x <= g.button[i].r.right &&
+			y >= g.button[i].r.bot &&
+			y <= g.button[i].r.top) {
+			g.button[i].over=1;
+			if (g.button[i].over) {
+				if (lbutton) {
+					switch(i) {
+						case 0:
+							title=0;
+							break;
+						case 1:
+							doneg=true;
+							break;
+					}
+				}
+			}
+		}
+	}
+	return;
+}
