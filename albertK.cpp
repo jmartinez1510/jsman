@@ -305,7 +305,9 @@ void bulletMovement(Game *game, WalkEnemy *w) {
 
 		if(walkerShot(b,w) == true) {
 			if(b->pos.x > w->center.x - w->width)
-				deleteEnemy(w);
+				deleteBullet(b);
+				game->walkers[0].center.x = -100;
+		game->walkers[0].center.y = -100;
 		}
 
 		b = b->next;
