@@ -138,6 +138,18 @@ void soundBullet(void);
 void soundJump(void);
 void stage2(Game *game);
 
+void shotgunPress(Game *game, Character *c);
+void shotgunMovement1(Game *game, WalkEnemy *w);
+void shotgunMovement2(Game *game, WalkEnemy *w);
+void shotgunMovement3(Game *game, WalkEnemy *w);
+void BuildWalker(Game *game);
+void WalkerDeath(Game *game);
+bool NormalShot = 1;
+bool TruePain = 0;
+void IhaveProblems(void);
+void difficulties(void);
+void renderDiff(Game *game);
+
 //void cutsc(Game *game); //cutscene function prototype
 
 void createMovePlat(Game *game);
@@ -148,7 +160,7 @@ void movingPlatTopCollision(Game *game, Character *c);
 
 void movePlatform(void);
 
-void characterMaker(Game *game); //EXPERIMENTAL!!!!!!!!!!!!1
+void characterMaker(Game *game); 
 
 void maker_miniBoss(Game *game);
 void delete_miniBoss(Game *g, miniBoss *node);
@@ -179,6 +191,8 @@ int main(void)
 	//game.character.center.x = 400;
 	//game.character.center.y = 200;
 	characterMaker(&game);
+	
+	BuildWalker(&game);
 	
 	game.walkers[0].width = 22;
 	game.walkers[0].height = 14;
@@ -556,14 +570,22 @@ void movement(Game *game)
 	//bullet
 	bulletMovement(game,w);
 
-	if (keys[XK_space]) {
+	/*if (keys[XK_space]) {
 		bulletPress(game,c);
-	}
+	}*/
 	
+	if (keys[XK_space]) {
+		if (NormalShot == 1)
+			bulletPress(game,c);
+		if (NormalShot == 0)
+			shotgunPress(game,c);
+	}
 
 	charEnemyColl(game);
 	crushCollision(game);
 	MPStop(game);	
+	
+	WalkerDeath(game);
 }
 
 void gotHitAlready(Game *game) {
