@@ -35,18 +35,15 @@ struct Character {
 	Vec center;  //position?
 	Vec pos;
 	
-	bool walkClk;
-	bool walk;
-	bool shoot;
-	bool right;
-	bool left;
-	
+	clock_t beginStay;
 	clock_t beginShoot;
 	clock_t beginWalk;
-    clock_t beginBlock;
-    float shootTimeDif;
-    float walkTimeDif;
-    float blockTimeDif;
+    	clock_t beginJump;
+    
+	   float stayTimeDif;
+	   float shootTimeDif;
+	   float walkTimeDif;
+	   float jumpTimeDif;
 	
 };
 
