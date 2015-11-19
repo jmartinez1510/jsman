@@ -55,20 +55,15 @@ void bulletRender(void);
 int initOpenal(void);
 void playSound(void);
 void cleanupOpenal(void);
-/*void initButton(void);
-void checkMouse(XEvent *e);
-void menu(void);*/
-
 
 //////////////////danbi add
 
 Game game;
+bool lGo = false;
 
 /*const double oobillion = 1.0 / 1e9;
 struct timespec timeStart, timeCurrent;
 struct timespec timePause;*/
-struct timespec timeCharacter;
-
 
 bool collision(Character *c, Shape *s);
 bool walkercollision(WalkEnemy *wE, Shape *s);
