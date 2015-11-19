@@ -214,7 +214,9 @@ int main(void)
                 usleep(250000);
         }*/
 
-	jsSprite();
+	initImageToLeft();
+	initImageToRight();
+	
 	platform();
 	movePlatform();
 	 //Don't put it in init open gl, lags everything up
@@ -249,6 +251,11 @@ int main(void)
 			
 			//}   //cutscene enabler
        		}
+       		else{
+			if(exit_game==true){
+				return 0;
+			}
+		}
 		render(&game); 
 		
 		//if(game.character.health <= 0)
@@ -639,7 +646,56 @@ void render(Game *game)
 	glPushMatrix();
 	//glColor3ub(100,100,100);
 	glTranslatef(d->center.x, d->center.y, d->center.z);
-	renderJS();
+
+		
+	
+	if(((keys[XK_Right])||(keys[XK_Left]))) {
+		if((keys[XK_Right])){
+			lGo = false;
+			if(((!keys[XK_Up])&&!(keys[XK_space]))){
+				walkAnime(lGo);
+			}
+			else if(((keys[XK_Up])&&!(keys[XK_space]))){		//jump to right
+				jumpAnime(lGo);
+			}
+			else if((!(keys[XK_Up])&&keys[XK_space])){		//jump w/ shoot
+				shootAnime(lGo, 'j');
+			}				
+			else if((keys[XK_space])){		//walk and shoot
+				shootAnime(lGo, 'w');
+			}
+		}
+		else{
+			lGo = true;
+			if(((!keys[XK_Up])&&!(keys[XK_space]))){
+				walkAnime(lGo);
+			}
+			else if(((keys[XK_Up])&&!(keys[XK_space]))){		//jump to left
+				jumpAnime(lGo);
+			}
+			else if((!(keys[XK_Up])&&keys[XK_space])){		//jump w/ shoot
+				shootAnime(lGo, 'j');
+			}				
+			else if((keys[XK_space])){		//walk and shoot
+				shootAnime(lGo, 'w');
+			}
+			
+		}
+	}
+	else if(((keys[XK_Up])&&!(keys[XK_space]))){		//jump
+		jumpAnime(lGo);
+	}
+	else if((!(keys[XK_Up])&&keys[XK_space])){		//jump w/ shoot
+		shootAnime(lGo, 'j');
+	}	
+	else if((keys[XK_space])){		//stay and shoot
+		shootAnime(lGo, 's');
+	}
+	else{
+		stayAnime(lGo);
+	}
+
+
 	glPopMatrix();
 	drawHealth(d->center.x, game->character.health);
 	bulletRender();
