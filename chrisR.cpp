@@ -215,7 +215,7 @@ void renderBG(void) {
 	
 	//Multiple images placed from 0 to 5 times the original location for more map area
         glBegin(GL_QUADS);
-	for(int i = 0; i < 7; i++) {
+	for(int i = 0; i < 10; i++) {
         //glTexCoord2f(0.0f, 1.0f); glVertex2i(0, 0);
         //glTexCoord2f(0.0f, 0.0f); glVertex2i(0, WINDOW_HEIGHT);
         //glTexCoord2f(1.0f, 0.0f); glVertex2i(WINDOW_WIDTH, WINDOW_HEIGHT);
