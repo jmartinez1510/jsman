@@ -8,10 +8,9 @@ extern void initButton(void);
 extern void checkMouse(XEvent *);
 extern void initImageToLeft();
 extern void initImageToRight();
-extern void stayAnime(bool, bool);
-extern void walkAnime(bool, bool);
-extern void jumpAnime(bool, bool);
-extern void shootAnime(bool, bool, char);
-
+extern void stayAnime(bool);
+extern void walkAnime(bool);
+extern void jumpAnime(bool);
+extern void shootAnime(bool, char);
 
 #endif
