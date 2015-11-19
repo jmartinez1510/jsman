@@ -52,6 +52,7 @@ struct WalkEnemy {
 	Vec velocity;
 	float width, height;
 	Vec center;
+	int lives;
 	struct WalkEnemy *prev;
 	struct WalkEnemy *next;
 };
