@@ -19,15 +19,21 @@ void soundBullet(); //Jeremy
 extern int endX;
 
 extern bool EnemyTouchPlatform;
+//------------------------------------\/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \ /\ /\ /\ /\/ \/ \/ \/ \/ \/ \/
+extern bool NormalShot;
 
+extern bool TruePain;
 
-
+bool painAct = 0;
+//-------------------------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Ppmimage *Eimage = NULL;
 GLuint eTexture;
 GLuint ilhouetteTexture;
 Ppmimage *Eimage2 = NULL;
 GLuint eTexture2;
 
+Ppmimage *Dimage = NULL;
+GLuint dTexture;
 
 typedef struct t_bullet {
 	Vec pos; //perhaps later write "center"?
@@ -56,6 +62,29 @@ double timeDiff(struct timespec *start, struct timespec *end) {
 void timeCopy(struct timespec *dest, struct timespec *source) {
 	memcpy(dest, source, sizeof(struct timespec));
 }
+
+
+//------------------------------------\/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \ /\ /\ /\ /\/ \/ \/ \/ \/ \/ \/
+
+void BuildWalker(Game *game)
+{
+	game->walkers[0].width = 22;
+	game->walkers[0].height = 14;
+	game->walkers[0].center.x = 750;
+	game->walkers[0].center.y = 275;
+	game->walkers[0].lives = 3;
+
+}
+
+void WalkerDeath(Game *game)
+{
+	if(game->walkers[0].lives <= 0){
+		game->walkers[0].center.x = -1000;
+		game->walkers[0].center.y = -1000;
+	}
+}
+
+//-------------------------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 bool walkerShot(Bullet *b, WalkEnemy *w) {
 	if((b->pos.y) <= (w->center.y + w->height) &&  
@@ -245,6 +274,60 @@ void bulletPress(Game *game, Character *c) {
 		}
 }
 
+//------------------------------------\/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \ /\ /\ /\ /\/ \/ \/ \/ \/ \/ \/
+void shotgunPress(Game *game, Character *c) {
+	
+	struct timespec bt;
+		clock_gettime(CLOCK_REALTIME, &bt);
+		double ts = timeDiff(&bulletTimer, &bt);
+		if (ts > 1) {
+			timeCopy(&bulletTimer, &bt);
+		//shoot a bullet...
+			Bullet *b = (Bullet *)malloc(sizeof(Bullet));
+			timeCopy(&b->time, &bt);
+			b->pos.x = c->center.x;
+			b->pos.y = c->center.y;
+			b->vel.x = b->vel.x;
+			b->vel.y = b->vel.y;
+		
+			b->prev = NULL;
+			b->next = bhead;
+			if (bhead != NULL)
+				bhead->prev = b;
+			bhead = b;
+			soundBullet(); //Jeremy
+
+			//timeCopy(&bulletTimer, &bt);
+		//shoot a bullet...
+			Bullet *b2 = (Bullet *)malloc(sizeof(Bullet));
+			timeCopy(&b2->time, &bt);
+			b2->pos.x = c->center.x;
+			b2->pos.y = c->center.y + 1;
+			b2->vel.x = b2->vel.x;
+			b2->vel.y = b2->vel.y + 1;
+		
+			b2->prev = NULL;
+			b2->next = bhead;
+			if (bhead != NULL)
+				bhead->prev = b2;
+			bhead = b2;
+
+			Bullet *b3 = (Bullet *)malloc(sizeof(Bullet));
+			timeCopy(&b3->time, &bt);
+			b3->pos.x = c->center.x;
+			b3->pos.y = c->center.y - 1;
+			b3->vel.x = b3->vel.x;
+			b3->vel.y = b3->vel.y - 1;
+		
+			b3->prev = NULL;
+			b3->next = bhead;
+			if (bhead != NULL)
+				bhead->prev = b3;
+			bhead = b3;
+		}
+}
+//-------------------------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 void deleteBullet(Bullet *node)
 {
 	//remove a node from linked list
@@ -306,8 +389,9 @@ void bulletMovement(Game *game, WalkEnemy *w) {
 		if(walkerShot(b,w) == true) {
 			if(b->pos.x > w->center.x - w->width)
 				deleteBullet(b);
-				game->walkers[0].center.x = -100;
-		game->walkers[0].center.y = -100;
+				game->walkers[0].lives -= 1;
+				//game->walkers[0].center.x = -100;
+				//game->walkers[0].center.y = -100;
 		}
 
 		b = b->next;
@@ -343,6 +427,65 @@ void enemyMaker2()
 	glTexCoord2f(0.0f, 0.0f); glVertex2i(-28.5, 21);
 	glTexCoord2f(1.0f, 0.0f); glVertex2i(28.5, 21);
 	glTexCoord2f(1.0f, 1.0f); glVertex2i(28.5, -21);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_ALPHA_TEST);
+
+	glPopMatrix();
+}
+
+//------------------------------------\/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \ /\ /\ /\ /\/ \/ \/ \/ \/ \/ \/
+void difficulties() 
+{
+	Dimage = ppm6GetImage("./images/programtext.ppm");
+	glGenTextures(1, &dTexture);
+	glGenTextures(1, &ilhouetteTexture);
+
+	glBindTexture(GL_TEXTURE_2D, dTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	unsigned char *ilhouetteData = buildAlphData(Dimage);	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Dimage->width, Dimage->height, 0,
+							GL_RGBA, GL_UNSIGNED_BYTE, ilhouetteData);
+	free(ilhouetteData);
+}
+
+void IhaveProblems()
+{
+	if(TruePain == 1){
+		difficulties();
+	painAct = 1;
+	}
+	if(TruePain == 0) {
+		painAct = 0;
+	}
+}
+
+
+void renderDiff(Game *game) 
+{
+	
+	glColor3f(1.0,1.0,1.0);
+	
+	//renderEnemy;
+	glEnable(GL_ALPHA_TEST);
+		glAlphaFunc(GL_GREATER, 0.0f);
+	glBindTexture(GL_TEXTURE_2D, dTexture);
+	glBegin(GL_QUADS);
+	if(painAct == 1) { 
+	glTexCoord2f(0.0f, 1.0f); glVertex2i((-400)+game->character.center.x, 0);
+	glTexCoord2f(0.0f, 0.0f); glVertex2i((-400)+game->character.center.x, 600);
+	glTexCoord2f(1.0f, 0.0f); glVertex2i(400+game->character.center.x, 600);
+	glTexCoord2f(1.0f, 1.0f); glVertex2i(400+game->character.center.x, 0);
+	}
+	if(painAct == 0) {
+	glTexCoord2f(0.0f, 1.0f); glVertex2i(-800, -800);
+	glTexCoord2f(0.0f, 0.0f); glVertex2i(-800, -600);
+	glTexCoord2f(1.0f, 0.0f); glVertex2i(-800, -600);
+	glTexCoord2f(1.0f, 1.0f); glVertex2i(-800, -800);
+	}
 	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
