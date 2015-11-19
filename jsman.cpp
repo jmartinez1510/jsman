@@ -172,7 +172,6 @@ int main(void)
 	initXWindows();
 	init_opengl();
 	//declare game object
-	Game game;
 	game.n=0;
 	
 	initButton();
