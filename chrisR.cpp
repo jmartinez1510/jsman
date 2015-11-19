@@ -356,7 +356,7 @@ void createMovePlat(Game *game) {
 
 	game->movePlatform[1].width = 45; 
 	game->movePlatform[1].height = 25; 
-	game->movePlatform[1].center.x = 3800; 
+	game->movePlatform[1].center.x = -1000; 
 	game->movePlatform[1].center.y = 140;	
 	game->movePlatform[2].width = 45; 
 	game->movePlatform[2].height = 25; 
