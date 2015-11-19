@@ -33,11 +33,8 @@ extern int title, done;
 extern bool play_game, exit_game;
 extern unsigned char *buildAlphaData(Ppmimage *img);
 static GLuint silhouetteTexture;
-extern struct timespec timeStart, timeCurrent, timeCharacter;
 extern Game game;
-
-extern double timeDiff(struct timespec *, struct timespec *);
-extern void timeCopy(struct timespec *, struct timespec *);
+extern bool touchPlatform;
 
 
 typedef struct t_button {
@@ -114,7 +111,6 @@ void menu(void){
     glTexImage2D(GL_TEXTURE_2D, 0, 3, titleImage->width, titleImage->height,
 			0, GL_RGB, GL_UNSIGNED_BYTE, titleImage->data);
 }
-
 
 void menuRender(void){
 	
@@ -273,7 +269,7 @@ void checkMouse(XEvent *e){
 							title=0;
 							break;
 						case 1:
-							done=true;
+							exit_game = true;
 							break;
 					}
 				}
@@ -282,8 +278,6 @@ void checkMouse(XEvent *e){
 	}
 	return;
 }
-
-
 
 void initImageToLeft(){
 	
@@ -385,7 +379,6 @@ void initImageToLeft(){
 	}
 }
 
-
 void initImageToRight(){
 	
 	rightImage[0] = ppm6GetImage("./images/stayR1.ppm");
@@ -486,17 +479,16 @@ void initImageToRight(){
 	}
 }
 
+void stayAnime(bool left){
 
+    int timing;
 
-void stayAnime(bool left, bool right){
+	game.character.stayTimeDif = float(clock() - game.character.beginStay) / CLOCKS_PER_SEC;
 	
-	double curanim;
-    int curanimtime;
-    curanim = timeDiff(&timeCharacter, &timeCurrent);
-    curanim *= 10;
-    curanimtime = (int) curanim;
-    curanimtime = curanimtime%2;
-    glColor3ub(255,255,255);//set color to pure white to avoid blending 
+	timing = (int)(game.character.stayTimeDif*5) % 2; 
+	
+		
+	glColor3ub(255,255,255);//set color to pure white to avoid blending 
     
     //draw a recangle at character's position using run sprite
     glPushMatrix();
@@ -504,51 +496,54 @@ void stayAnime(bool left, bool right){
     glEnable(GL_ALPHA_TEST);
     
     
-    if(!left && right){
-		glBindTexture(GL_TEXTURE_2D, rightTexture[curanimtime]);    
+    if(!left){
+		glBindTexture(GL_TEXTURE_2D, rightTexture[timing]);    
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
+		glBindTexture(GL_TEXTURE_2D, 0);
+		//disable alpha blending to avoid conflict on other draw functions
+		glDisable(GL_ALPHA_TEST);
+		//glDisable(GL_TEXTURE_2D);
+		glPopMatrix();
     }
-    else if(left && !right){
-		glBindTexture(GL_TEXTURE_2D, leftTexture[curanimtime]);
+    else{
+		glBindTexture(GL_TEXTURE_2D, leftTexture[timing]);
         glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
+	    glBindTexture(GL_TEXTURE_2D, 0);
+		//disable alpha blending to avoid conflict on other draw functions
+		glDisable(GL_ALPHA_TEST);
+		//glDisable(GL_TEXTURE_2D);
+		glPopMatrix();
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    //disable alpha blending to avoid conflict on other draw functions
-    glDisable(GL_ALPHA_TEST);
-    //glDisable(GL_TEXTURE_2D);
-    glPopMatrix();
-
-	
+    
 }
 
-
-
-void walkAnime(bool left, bool right){
+void walkAnime(bool left){
 	
-	double curanim;
-    int curanimtime;
-    curanim = timeDiff(&timeCharacter, &timeCurrent);
-    curanim *= 10;
-    curanimtime = (int) curanim;
-    curanimtime = curanimtime%3;
+    int timing;
+
+	game.character.walkTimeDif = float(clock() - game.character.beginWalk) / CLOCKS_PER_SEC;
+
+	timing = (int)(game.character.walkTimeDif*10) % 3; 
+    
+    
     glColor3ub(255,255,255);//set color to pure white to avoid blending 
     
     //draw a rectangle at character's position using run sprite
@@ -557,30 +552,30 @@ void walkAnime(bool left, bool right){
     glEnable(GL_ALPHA_TEST);
     
     
-    if(!left && right){
-		glBindTexture(GL_TEXTURE_2D, rightWalkTexture[curanimtime]);    
+    if(!left){
+		glBindTexture(GL_TEXTURE_2D, rightWalkTexture[timing]);    
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
     }
-    else if(left && !right){
-		glBindTexture(GL_TEXTURE_2D, leftWalkTexture[curanimtime]);
+    else{
+		glBindTexture(GL_TEXTURE_2D, leftWalkTexture[timing]);
         glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
     }
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -592,14 +587,15 @@ void walkAnime(bool left, bool right){
 	
 }
 
-void jumpAnime(bool left, bool right){
+void jumpAnime(bool left){
 	
-	double curanim;
-    int curanimtime;
-    curanim = timeDiff(&timeCharacter, &timeCurrent);
-    curanim *= 10;
-    curanimtime = (int) curanim;
-    curanimtime = curanimtime%3;
+    int timing;
+
+	game.character.jumpTimeDif = float(clock() - game.character.beginJump) / CLOCKS_PER_SEC;
+
+	timing = (int)(game.character.jumpTimeDif*10) % 2; 
+	
+	
     glColor3ub(255,255,255);//set color to pure white to avoid blending 
     
     //draw a rectangle at character's position using run sprite
@@ -608,43 +604,30 @@ void jumpAnime(bool left, bool right){
     glEnable(GL_ALPHA_TEST);
     
     
-    if(!left && right){
-	//	while(game.character.velocity!=0.0){
-			glBindTexture(GL_TEXTURE_2D, rightJumpTexture[0]);    
-			glBegin(GL_QUADS);
-				glTexCoord2f(0.0f,1.0f); 
-				glVertex2i(-22, -25);
-				glTexCoord2f(0.0f,0.0f); 
-				glVertex2i(-22, 25);
-				glTexCoord2f(1.0f,0.0f); 
-				glVertex2i(22, 25);
-				glTexCoord2f(1.0f,1.0f); 
-				glVertex2i(22, -25);
-			glEnd();
-	//	}
-		glBindTexture(GL_TEXTURE_2D, rightJumpTexture[1]);    
+    if(!left){
+		glBindTexture(GL_TEXTURE_2D, rightJumpTexture[timing]);    
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
     }
-    else if(left && !right){
-		glBindTexture(GL_TEXTURE_2D, leftJumpTexture[curanimtime]);
-        	glBegin(GL_QUADS);
+    else{
+		glBindTexture(GL_TEXTURE_2D, leftJumpTexture[timing]);
+       	glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
     }
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -656,21 +639,19 @@ void jumpAnime(bool left, bool right){
 	
 }
 
-void shootAnime(bool left, bool right, char a){
+void shootAnime(bool left, char a){
 	
-	double curanim;
-    int curanimtime;
-    curanim = timeDiff(&timeCharacter, &timeCurrent);
-    curanim *= 10;
-    curanimtime = (int) curanim;
+    int timing;
+
+	game.character.shootTimeDif = float(clock() - game.character.beginShoot) / CLOCKS_PER_SEC;
 	
-	
-	if(a == 'a')	//stay and shoot
-		curanimtime = 0;
-	else if(a == 'r')	//run and shoot
-		curanimtime = curanimtime%3 + 1;
+	if(a == 's'){	//stay and shoot
+		timing = 4;
+	}
+	else if(a == 'w')	//walk and shoot
+		timing = (int)(game.character.shootTimeDif*10) % 3;
 	else if(a == 'j')	//jump and shoot
-		curanimtime = 4;
+		timing = 0;
 		
     glColor3ub(255,255,255);//set color to pure white to avoid blending 
     
@@ -680,30 +661,30 @@ void shootAnime(bool left, bool right, char a){
     glEnable(GL_ALPHA_TEST);
     
     
-    if(!left && right){
-		glBindTexture(GL_TEXTURE_2D, rightShootTexture[curanimtime]);    
+    if(!left){
+		glBindTexture(GL_TEXTURE_2D, rightShootTexture[timing]);    
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
     }
-    else if(left && !right){
-		glBindTexture(GL_TEXTURE_2D, leftShootTexture[curanimtime]);
+    else{
+		glBindTexture(GL_TEXTURE_2D, leftShootTexture[timing]);
         glBegin(GL_QUADS);
 			glTexCoord2f(0.0f,1.0f); 
-			glVertex2i(-22, -25);
+			glVertex2i(-25, -28);
 			glTexCoord2f(0.0f,0.0f); 
-			glVertex2i(-22, 25);
+			glVertex2i(-25, 28);
 			glTexCoord2f(1.0f,0.0f); 
-			glVertex2i(22, 25);
+			glVertex2i(25, 28);
 			glTexCoord2f(1.0f,1.0f); 
-			glVertex2i(22, -25);
+			glVertex2i(25, -28);
 		glEnd();
     }
     glBindTexture(GL_TEXTURE_2D, 0);
