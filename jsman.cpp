@@ -580,24 +580,27 @@ void gotHitAlready(Game *game) {
 }
 	
 
-void charEnemyColl(Game *game) {
-	
-	if((game->character.center.x+15 > game->walkers[0].center.x-15/* || game->character.center.x-10 > game->walkers[0].center.x+10*/) && (game->character.center.x-10 < game->walkers[0].center.x +10) && (game->character.center.y - 10 < game->walkers[0].center.y +10)) {
-			
-			game->character.health -= 20;
-			//if(game->character.center.x+10 > game->walkers[0].center.x-10) {
+void charEnemyColl(Game *game) 
+{
+	if((game->character.center.x + game->character.width > game->walkers[0].center.x-15) && 
+		(game->character.center.x- game->character.width < game->walkers[0].center.x +10) && 
+		(game->character.center.y - 10 < game->walkers[0].center.y + 10) &&
+		(game->character.center.y + 10 > game->walkers[0].center.y - 10)) 
+	{
+		game->character.health -= 20;
+		//soundHit();
+		if(game->character.center.x-10 < game->walkers[0].center.x+10) 
+		{
 			game->character.center.x -=35;
 			beginX -= 35;
 			endX -= 35;
-			//}
-			/*if(game->character.center.x-10 < game->walkers[0].center.x+10) {
+		}
+		if(game->character.center.x+10 > game->walkers[0].center.x-10) 
+		{
 			game->character.center.x +=35;
 			beginX += 35;
 			endX += 35;
-			}*/
-			//gotHit = 1;
-			gotHitAlready(game);
-			 
+		}
 	}
 }
 
